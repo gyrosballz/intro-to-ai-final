@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPA Calculator</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #161d2e;
+    --panel-2: #1d2740;
+    --border: #2a3550;
+    --text: #e8edf7;
+    --muted: #93a1bf;
+    --accent: #4499bd;
+    --accent-2: #2d70a2;
+    --good: #4caf7d;
+    --bad: #e2596b;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, var(--bg), #0b0f18);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 20px 60px;
+  }
+
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-size: 26px;
+    margin: 0 0 4px;
+    letter-spacing: 0.2px;
+  }
+
+  .program {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: var(--muted);
+  }
+
+  .program strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .info-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .info-icon:hover, .info-icon.open {
+    background: var(--accent);
+  }
+
+  .tooltip {
+    display: none;
+    position: absolute;
+    top: 30px;
+    left: 0;
+    width: min(520px, 88vw);
+    max-height: 60vh;
+    overflow-y: auto;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+    z-index: 50;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #d9e0f0;
+  }
+
+  .info-icon.open .tooltip,
+  .info-icon:hover .tooltip {
+    display: block;
+  }
+
+  .tooltip h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    color: var(--accent);
+  }
+
+  .tooltip h4 {
+    margin: 16px 0 6px;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+
+  .tooltip ol, .tooltip ul {
+    margin: 6px 0 6px 18px;
+    padding: 0;
+  }
+
+  .tooltip li {
+    margin-bottom: 8px;
+  }
+
+  .formula {
+    display: block;
+    background: #0d1220;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-family: "SF Mono", Consolas, Menlo, monospace;
+    font-size: 12.5px;
+    color: #9fd4e8;
+  }
+
+  .tooltip table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 12.5px;
+  }
+
+  .tooltip table th, .tooltip table td {
+    border: 1px solid var(--border);
+    padding: 5px 7px;
+    text-align: center;
+  }
+
+  .tooltip table th {
+    background: #131a2c;
+    color: var(--muted);
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 22px;
+    overflow-x: auto;
+  }
+
+  table.courses {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 560px;
+  }
+
+  table.courses th {
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table.courses td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #1d2540;
+    font-size: 14px;
+  }
+
+  table.courses tr:last-child td {
+    border-bottom: none;
+  }
+
+  table.courses tr.added {
+    background: rgba(68, 153, 189, 0.06);
+  }
+
+  td.num { text-align: center; width: 90px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge.yes { background: rgba(76, 175, 125, 0.16); color: var(--good); }
+  .badge.no  { background: rgba(226, 89, 107, 0.16); color: var(--bad); }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  button {
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    color: white;
+    transition: transform 0.05s ease, filter 0.15s ease;
+  }
+
+  button:active { transform: translateY(1px); }
+
+  #calcBtn { background: var(--accent-2); }
+  #calcBtn:hover { filter: brightness(1.12); }
+
+  #calcAiBtn { background: #7a52c7; }
+  #calcAiBtn:hover { filter: brightness(1.12); }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--muted);
+    max-width: 260px;
+    line-height: 1.4;
+  }
+
+  .results {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .result-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    min-width: 220px;
+    flex: 1;
+  }
+
+  .result-card .label {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .result-card .value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .result-card.dim .value { color: var(--muted); }
+
+  .result-card .sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  footer {
+    margin-top: 30px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>GPA Calculator</h1>
+      <div class="program">
+        Program: <strong id="programName">Computer Science</strong>
+        <span class="info-icon" id="infoIcon" tabindex="0" aria-label="GPA calculation rules">
+          i
+          <div class="tooltip" id="tooltip">
+            <h3>GPA Calculation Rules — Ilia State University</h3>
+            <p>Translated from the official document (source: iliauni.edu.ge).</p>
+
+            <ol>
+              <li>
+                At Ilia State University, GPA (Grade Point Average) is the sum of the products of each
+                course's Grade Point (GP) and its credits, divided by the sum of the credits of the
+                courses the student has taken:
+                <span class="formula">GPA = Σ (GP of course × credits of course) / Σ (credits of course)</span>
+              </li>
+              <li>GP (Grade Point) is the converted score of the grade received in a course, expressed on a 4-point scale.</li>
+              <li>
+                Under the GP system, grades fall into the following categories:
+                <ul>
+                  <li>F — 0–50 points (0 points, Fail)</li>
+                  <li>E — 51–60 points</li>
+                  <li>D — 61–70 points</li>
+                  <li>C — 71–80 points</li>
+                  <li>B — 81–90 points</li>
+                  <li>A — 91–95 points</li>
+                  <li>A+ — 96–100 points</li>
+                </ul>
+              </li>
+              <li>
+                An E-category grade (51–60) is always fixed at 1.00 GP. Grades in the D, C, B, and A
+                categories (61 to 95 points inclusive) increase evenly in steps of 1/12 (≈0.08) per point.
+                An A+ grade (96 to 100 points) is fixed at 4.00 GP.
+              </li>
+              <li>GPA is awarded within all academic programs at Ilia State University, except doctoral-level studies. GPA is also not awarded for certificate programs.</li>
+              <li>Ilia State University issues only the final GPA, which appears in the diploma supplement. This does not apply to the single-cycle Certified Physician program.</li>
+              <li>When the final GPA is calculated, fractional values are rounded to one decimal place.</li>
+            </ol>
+
+            <h4>Table 1. Conversion of course grades to the GP system</h4>
+            <table>
+              <tr>
+                <th>Grade</th><th>F</th><th>E</th><th>D</th><th>C</th><th>B</th><th>A</th><th>A+</th>
+              </tr>
+              <tr>
+                <td>Score range</td><td>0–50</td><td>51–60</td><td>61–70</td><td>71–80</td><td>81–90</td><td>91–95</td><td>96–100</td>
+              </tr>
+              <tr>
+                <td>GP</td><td>0.00</td><td>1.00</td><td>1.83</td><td>2.67</td><td>3.50</td><td>3.92</td><td>4.00</td>
+              </tr>
+            </table>
+          </div>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <div class="card">
+    <table class="courses" id="courseTable">
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th class="num">Credit</th>
+          <th class="num">Grade</th>
+          <th class="num">Passed</th>
+        </tr>
+      </thead>
+      <tbody id="courseBody"></tbody>
+    </table>
+  </div>
+  <p style="font-size:12.5px; color:var(--muted); margin: -14px 0 20px;">
+    Courses marked "No" have not been awarded credits yet — they are currently in progress and,
+    per official guidance, are excluded from the GPA calculations below (they don't yet have a
+    final grade to convert into a Grade Point).
+  </p>
+
+  <div class="controls">
+    <div class="btn-group">
+      <button id="calcBtn">Calculate</button>
+      <div class="hint">
+        Calculates GPA using only courses with a final grade ("Passed" = Yes). Courses currently
+        in progress (shown as "No", 0 credits awarded) don't have a final score yet, so they're
+        left out of both the numerator and the denominator.
+      </div>
+    </div>
+    <div class="btn-group">
+      <button id="calcAiBtn">Calculate with Introduction to AI</button>
+      <div class="hint">
+        Same calculation as "Calculate," but adds "Introduction to AI" back in, using an assumed
+        final score of your current accumulated points (<strong id="aiCurrentPts">–</strong>)
+        plus 30 final-exam points — as if that were its final grade. All other in-progress
+        courses stay excluded.
+      </div>
+    </div>
+  </div>
+
+  <div class="results">
+    <div class="result-card dim" id="resultCard1">
+      <div class="label">GPA (Calculate)</div>
+      <div class="value" id="gpaResult1">—</div>
+      <div class="sub" id="gpaSub1">Not calculated yet</div>
+    </div>
+    <div class="result-card dim" id="resultCard2">
+      <div class="label">GPA (with Introduction to AI assumption)</div>
+      <div class="value" id="gpaResult2">—</div>
+      <div class="sub" id="gpaSub2">Not calculated yet</div>
+    </div>
+  </div>
+
+  <footer>GPA computed using the official Ilia State University GP conversion formula.</footer>
+</div>
+
+<script>
+  // ---- Course data (exactly as listed in the transcript) ----
+  // passed: true if credits were awarded (mininch. kred === credit)
+  const courses = [
+    { name: "აკადემიური მუშაობის ტექნიკები (ENG)", credit: 6, grade: 76.00, passed: true },
+    { name: "ინგლისური ენის პრაქტიკული კურსი C1-1 (ENG)", credit: 6, grade: 94.20, passed: true },
+    { name: "ინგლისური ენის პრაქტიკული კურსი C1-2 (ENG)", credit: 6, grade: 91.00, passed: true },
+    { name: "კალკულუსი I (ENG)", credit: 6, grade: 81.00, passed: true },
+    { name: "კალკულუსი II (ENG)", credit: 6, grade: 64.80, passed: true },
+    { name: "კალკულუსი III (ENG)", credit: 6, grade: 64.50, passed: true },
+    { name: "ფიზიკის საფუძვლები I (including Lab) (ENG)", credit: 8, grade: 53.00, passed: true },
+    { name: "ფიზიკის საფუძვლები II (ENG)", credit: 6, grade: 89.00, passed: true },
+    { name: "შესავალი თანამედროვე აზროვნებაში I (ENG)", credit: 6, grade: 72.00, passed: true },
+    { name: "შესავალი წრფივ ალგებრაში (ENG)", credit: 6, grade: 58.00, passed: true },
+    { name: "AWS ღრუბლოვანი ინფრასტრუქტურის მომხმარებელი (ENG)", credit: 6, grade: 15.05, passed: false },
+    { name: "ალგორითმები და მონაცემთა სტრუქტურები (ENG)", credit: 6, grade: 55.00, passed: true },
+    { name: "გამოთვლების მათემატიკური საფუძვლები (ENG)", credit: 6, grade: 74.00, passed: true },
+    { name: "გამოთვლითი და სტატისტიკური მეთოდები (ENG)", credit: 6, grade: 53.00, passed: true },
+    { name: "განაწილებული და პარალელური გამოთვლები (ENG)", credit: 6, grade: 0.00, passed: false },
+    { name: "ვებპროგრამირება (ENG)", credit: 6, grade: 70.00, passed: true },
+    { name: "კომპიუტერის ორგანიზაცია (ENG)", credit: 6, grade: 90.90, passed: true },
+    { name: "კომპიუტერული და მონაცემთა ქსელები (ENG)", credit: 6, grade: 91.00, passed: true },
+    { name: "მონაცემთა ბაზები და საინფორმაციო სისტემები (ENG)", credit: 6, grade: 79.80, passed: true },
+    { name: "ობიექტზე ორიენტირებული დაპროგრამება (ENG)", credit: 6, grade: 44.00, passed: false },
+    { name: "პროცედურული დაპროგრამება C-ზე (ENG)", credit: 6, grade: 60.00, passed: true },
+    { name: "რიცხვითი მეთოდების საფუძვლები (ENG)", credit: 6, grade: 64.00, passed: true },
+    { name: "შესავალი დაპროგრამებაში (ENG)", credit: 6, grade: 88.80, passed: true },
+    { name: "შესავალი ზოგად ქიმიაში (ლაბორატორიულით) (ENG)", credit: 8, grade: 89.00, passed: true },
+    { name: "შესავალი კიბერუსაფრთხოებაში (ENG)", credit: 6, grade: 66.00, passed: true },
+    { name: "შესავალი მანქანურ სწავლებაში (ENG)", credit: 6, grade: 56.50, passed: false },
+    { name: "შესავალი ოპერაციულ სისტემებში (ENG)", credit: 6, grade: 88.00, passed: true },
+    { name: "შესავალი ხელოვნურ ინტელექტში (ENG)", credit: 6, grade: 50.00, passed: false, isAI: true },
+    { name: "წრედების ანალიზი I (ENG)", credit: 6, grade: 71.00, passed: true },
+    { name: "წრედების ანალიზი II (ENG)", credit: 6, grade: 31.00, passed: false },
+
+    // --- 5 additional courses from the program (not in transcript above) ---
+    { name: "პროგრამული ინჟინერია (ENG)", credit: 6, grade: 100.00, passed: true, added: true },
+    { name: "კომპიუტერული გრაფიკა (ENG)", credit: 6, grade: 100.00, passed: true, added: true },
+    { name: "კრიპტოგრაფია (ENG)", credit: 6, grade: 100.00, passed: true, added: true },
+    { name: "მობილური აპლიკაციების დამუშავება (ENG)", credit: 6, grade: 100.00, passed: true, added: true },
+    { name: "კომპილატორების კონსტრუირება (ENG)", credit: 6, grade: 100.00, passed: true, added: true },
+  ];
+
+  const AI_BONUS_POINTS = 30;
+
+  // ---- Render course table ----
+  const tbody = document.getElementById("courseBody");
+  courses.forEach(c => {
+    const tr = document.createElement("tr");
+    if (c.added) tr.classList.add("added");
+    tr.innerHTML = `
+      <td>${c.name}</td>
+      <td class="num">${c.credit}</td>
+      <td class="num">${c.grade.toFixed(2)}</td>
+      <td class="num"><span class="badge ${c.passed ? 'yes' : 'no'}">${c.passed ? 'Yes' : 'No'}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // ---- AI course current points display ----
+  const aiCourse = courses.find(c => c.isAI);
+  if (aiCourse) {
+    document.getElementById("aiCurrentPts").textContent = aiCourse.grade.toFixed(2);
+  }
+
+  // ---- GP conversion per official ISU formula ----
+  function scoreToGP(score) {
+    if (score <= 50) return 0;
+    if (score <= 60) return 1.00;
+    if (score <= 95) return 1.00 + (score - 60) / 12;
+    return 4.00;
+  }
+
+  // Courses currently in progress (passed === false, no credits awarded yet) are
+  // excluded from GPA entirely, per official guidance: only courses with a final
+  // grade count toward GPA. The one exception is the optional "include AI" flag,
+  // which adds "Introduction to AI" back in using an assumed final score.
+  function computeGPA(includeAI, aiOverrideScore) {
+    let totalPoints = 0;
+    let totalCredits = 0;
+    courses.forEach(c => {
+      let include = c.passed;
+      let score = c.grade;
+      if (c.isAI && includeAI) {
+        include = true;
+        score = aiOverrideScore !== undefined ? aiOverrideScore : c.grade;
+      }
+      if (!include) return;
+      const gp = scoreToGP(score);
+      totalPoints += gp * c.credit;
+      totalCredits += c.credit;
+    });
+    return totalCredits === 0 ? 0 : totalPoints / totalCredits;
+  }
+
+  // ---- Info icon: click toggle (in addition to hover) ----
+  const infoIcon = document.getElementById("infoIcon");
+  infoIcon.addEventListener("click", (e) => {
+    infoIcon.classList.toggle("open");
+    e.stopPropagation();
+  });
+  document.addEventListener("click", () => infoIcon.classList.remove("open"));
+
+  // ---- Calculate button ----
+  document.getElementById("calcBtn").addEventListener("click", () => {
+    const gpa = computeGPA(false);
+    const card = document.getElementById("resultCard1");
+    card.classList.remove("dim");
+    document.getElementById("gpaResult1").textContent = gpa.toFixed(1);
+    document.getElementById("gpaSub1").textContent =
+      "Based only on courses with a final grade. Courses currently in progress are excluded.";
+  });
+
+  // ---- Calculate with Introduction to AI button ----
+  document.getElementById("calcAiBtn").addEventListener("click", () => {
+    if (!aiCourse) return;
+    const assumedScore = aiCourse.grade + AI_BONUS_POINTS;
+    const gpa = computeGPA(true, assumedScore);
+    const card = document.getElementById("resultCard2");
+    card.classList.remove("dim");
+    document.getElementById("gpaResult2").textContent = gpa.toFixed(1);
+    document.getElementById("gpaSub2").textContent =
+      `Same as "Calculate", but adds "Introduction to AI" back in with an assumed final score = ${aiCourse.grade.toFixed(2)} (current) + ${AI_BONUS_POINTS} (final exam) = ${assumedScore.toFixed(2)}.`;
+  });
+</script>
+
+</body>
+</html>
